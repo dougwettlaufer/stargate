@@ -60,7 +60,7 @@ import com.google.common.collect.ImmutableMap;
 import io.stargate.auth.model.AuthTokenResponse;
 import io.stargate.it.BaseOsgiIntegrationTest;
 import io.stargate.it.http.models.Credentials;
-import io.stargate.it.storage.ClusterConnectionInfo;
+import io.stargate.it.storage.StargateConnectionInfo;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.InetSocketAddress;
@@ -109,18 +109,16 @@ import org.junit.jupiter.params.provider.MethodSource;
 @NotThreadSafe
 public class GraphqlTest extends BaseOsgiIntegrationTest {
 
+  private StargateConnectionInfo cluster;
   private CqlSession session;
   private String keyspace;
   private static String authToken;
   private static final ObjectMapper objectMapper = new ObjectMapper();
-  private static String host = "http://" + getStargateHost();
-
-  public GraphqlTest(ClusterConnectionInfo backend) {
-    super(backend);
-  }
 
   @BeforeEach
-  public void setup(ClusterConnectionInfo cluster) throws IOException {
+  public void setup(StargateConnectionInfo cluster) throws IOException {
+    this.cluster = cluster;
+
     keyspace = "betterbotz";
 
     session =
@@ -131,7 +129,7 @@ public class GraphqlTest extends BaseOsgiIntegrationTest {
                     .withDuration(DefaultDriverOption.REQUEST_TIMEOUT, Duration.ofSeconds(20))
                     .build())
             .withAuthCredentials("cassandra", "cassandra")
-            .addContactPoint(new InetSocketAddress(getStargateHost(), 9043))
+            .addContactPoint(new InetSocketAddress(cluster.seedAddress(), cluster.cqlPort()))
             .withLocalDatacenter(cluster.datacenter())
             .build();
 
@@ -246,7 +244,7 @@ public class GraphqlTest extends BaseOsgiIntegrationTest {
     String body =
         RestUtils.post(
             "",
-            String.format("%s:8081/v1/auth/token/generate", host),
+            String.format("http://%s:8081/v1/auth/token/generate", cluster.seedAddress()),
             objectMapper.writeValueAsString(new Credentials("cassandra", "cassandra")),
             HttpStatus.SC_CREATED);
 
@@ -914,7 +912,7 @@ public class GraphqlTest extends BaseOsgiIntegrationTest {
                             .build()))
             .build();
 
-    String url = String.format("http://%s:8080%s", getStargateHost(), path);
+    String url = String.format("http://%s:8080%s", cluster.seedAddress(), path);
     HttpUrl.Builder httpBuilder = HttpUrl.parse(url).newBuilder();
     httpBuilder.addQueryParameter("query", query);
     okhttp3.Response response =
@@ -1108,7 +1106,7 @@ public class GraphqlTest extends BaseOsgiIntegrationTest {
             .build();
 
     return ApolloClient.builder()
-        .serverUrl(String.format("http://%s:8080%s", getStargateHost(), path))
+        .serverUrl(String.format("http://%s:8080%s", cluster.seedAddress(), path))
         .okHttpClient(okHttpClient)
         .addCustomTypeAdapter(
             CustomType.TIMESTAMP,

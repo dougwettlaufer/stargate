@@ -13,24 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.stargate.it;
+package io.stargate.it.storage;
 
-import static io.stargate.it.storage.ClusterScope.SHARED;
+import java.util.List;
 
-import io.stargate.it.storage.ClusterConnectionInfo;
-import io.stargate.it.storage.ClusterSpec;
-import io.stargate.it.storage.UseStargateContainer;
-import org.junit.jupiter.api.BeforeEach;
+public interface StargateEnvironmentInfo {
 
-/** This class manages starting Stargate OSGi containers. */
-@UseStargateContainer
-@ClusterSpec(scope = SHARED)
-public class BaseOsgiIntegrationTest {
+  String id();
 
-  protected ClusterConnectionInfo backend;
-
-  @BeforeEach
-  public void init(ClusterConnectionInfo backend) {
-    this.backend = backend;
-  }
+  List<? extends StargateConnectionInfo> nodes();
 }

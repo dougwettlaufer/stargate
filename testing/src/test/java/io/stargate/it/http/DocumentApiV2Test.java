@@ -16,7 +16,7 @@ import com.google.common.collect.ImmutableList;
 import io.stargate.auth.model.AuthTokenResponse;
 import io.stargate.it.BaseOsgiIntegrationTest;
 import io.stargate.it.http.models.Credentials;
-import io.stargate.it.storage.ClusterConnectionInfo;
+import io.stargate.it.storage.StargateConnectionInfo;
 import io.stargate.web.models.Keyspace;
 import io.stargate.web.models.ResponseWrapper;
 import java.io.IOException;
@@ -29,7 +29,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import net.jcip.annotations.NotThreadSafe;
-import okhttp3.*;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
 import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,17 +49,15 @@ public class DocumentApiV2Test extends BaseOsgiIntegrationTest {
   private String keyspace;
   private CqlSession session;
   private static String authToken;
-  private static String host = "http://" + getStargateHost();
+  private String host;
   private static final ObjectMapper objectMapper = new ObjectMapper();
   private static final OkHttpClient client =
       new OkHttpClient().newBuilder().readTimeout(3, TimeUnit.MINUTES).build();
 
-  public DocumentApiV2Test(ClusterConnectionInfo backend) {
-    super(backend);
-  }
-
   @BeforeEach
-  public void setup(ClusterConnectionInfo cluster) throws IOException {
+  public void setup(StargateConnectionInfo cluster) throws IOException {
+    host = "http://" + cluster.seedAddress();
+
     keyspace = "ks_docs_" + System.currentTimeMillis();
     session =
         CqlSession.builder()
@@ -71,7 +74,7 @@ public class DocumentApiV2Test extends BaseOsgiIntegrationTest {
                         DefaultDriverOption.CONTROL_CONNECTION_TIMEOUT, Duration.ofSeconds(180))
                     .build())
             .withAuthCredentials("cassandra", "cassandra")
-            .addContactPoint(new InetSocketAddress(getStargateHost(), 9043))
+            .addContactPoint(new InetSocketAddress(cluster.seedAddress(), cluster.cqlPort()))
             .withLocalDatacenter(cluster.datacenter())
             .build();
 

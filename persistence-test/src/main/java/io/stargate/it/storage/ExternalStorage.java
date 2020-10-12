@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import com.datastax.oss.driver.api.core.Version;
 import com.datastax.oss.driver.api.testinfra.ccm.CcmBridge;
 import java.lang.reflect.AnnotatedElement;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
@@ -54,6 +55,10 @@ public class ExternalStorage
   static {
     String version = System.getProperty(CCM_VERSION, "3.11.8");
     System.setProperty(CCM_VERSION, version);
+  }
+
+  public static ClusterConnectionInfo connectionInfo() {
+    return cluster();
   }
 
   private static Cluster cluster() {
@@ -94,7 +99,7 @@ public class ExternalStorage
 
     c = new Cluster(spec, initSite);
     c.start();
-    ExternalStorage.cluster = c;
+    cluster = c;
   }
 
   @Override
@@ -173,6 +178,7 @@ public class ExternalStorage
 
   private static class Cluster implements ClusterConnectionInfo {
 
+    private final UUID id = UUID.randomUUID();
     private final ClusterSpec spec;
     private final String initSite;
     private final CcmBridge ccm;
@@ -223,6 +229,11 @@ public class ExternalStorage
           LOG.warn("Exception during CCM cluster shutdown: {}", e.toString(), e);
         }
       }
+    }
+
+    @Override
+    public String id() {
+      return id.toString();
     }
 
     @Override
