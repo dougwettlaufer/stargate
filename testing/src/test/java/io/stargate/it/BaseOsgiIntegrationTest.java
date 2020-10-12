@@ -16,7 +16,9 @@
 package io.stargate.it;
 
 import static io.stargate.it.storage.ClusterScope.SHARED;
+import static org.awaitility.Awaitility.await;
 
+import com.datastax.oss.driver.api.core.CqlSession;
 import io.stargate.it.storage.ClusterConnectionInfo;
 import io.stargate.it.storage.ClusterSpec;
 import io.stargate.it.storage.ExternalStorage;
@@ -25,6 +27,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.UnknownHostException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -136,5 +139,27 @@ public class BaseOsgiIntegrationTest {
     logger.info("Stargate node nr: {} started successfully", stargateNodeNumber);
     // add to starters only if it start() successfully
     stargateStarters.add(starter);
+  }
+
+  /**
+   * Waits until a CQL session sees all the Stargate nodes in its metadata. The CI environment is
+   * slow and it may take a while until system.peers is up to date.
+   */
+  protected void awaitAllNodes(CqlSession session) {
+
+    await()
+        .atMost(Duration.ofMinutes(10))
+        .pollInterval(Duration.ofSeconds(10))
+        .until(
+            () -> {
+              boolean connected = session.getMetadata().getNodes().size() == numberOfStargateNodes;
+              logger.info(
+                  "Expected: {}, in driver metadata: {}, in system tables: {}",
+                  numberOfStargateNodes,
+                  session.getMetadata().getNodes().size(),
+                  session.execute("SELECT * FROM system.peers").all().size() + 1);
+
+              return connected;
+            });
   }
 }
