@@ -181,9 +181,39 @@ is managed manually, use the following options to convey connection information 
 * `-Dstargate.test.backend.dc=<DATA_CENTER_NAME>`
 * `-Dstargate.test.backend.nodes=<NUMBER_OR_STORAGE_NODES>`
 
+When integration test run in with debugging options, the related Stargate nodes will also be
+started with debugging options (using consecutive ports starting with 5100), for example:
+```
+-agentlib:jdwp=transport=dt_socket,server=n,suspend=y,address=localhost:5100
+```
+
+It is expected that the user has several java debuggers waiting for connections on ports `510N` -
+one for each Stargate node required for the test. Note that most of the tests start only
+one Stargate node.
+
 ### Running / Debugging Integration Tests in an IDE
 
 Integration tests can be started / debugged individually in an IDE.
 
 If `ccm` is used to mange storage nodes during tests, it should be accessible from the IDE's
 execution environment (`PATH`).
+
+### Using JUnit Console Launcher
+
+JUnit [Console Launcher](https://junit.org/junit5/docs/current/user-guide/#running-tests-console-launcher)
+can also be used for executing (and debugging) integration tests.
+
+For example, execute these commands from the project root:
+```shell
+$ ./mvnw package
+$ java -Dstargate.libdir=stargate-lib -jar junit-platform-console-standalone-1.6.2.jar -cp testing-<VERSION>-all.jar -p io.stargate.it
+```
+
+### Specifying Storage Backend
+
+When tests are started manually via an IDE or JUnit Console Launcher, the type and version
+of the storage backend can be specified using the following java system properties.
+
+* `-Dccm.version=<version>` - the version of the storage cluster (e.g. `3.11.8`)
+* `-Dccm.dse=<true|false>` - whether the storage cluster is DSE or OSS Cassandra.
+  If `false` this option can be omitted.

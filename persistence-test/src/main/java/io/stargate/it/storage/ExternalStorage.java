@@ -196,6 +196,9 @@ public class ExternalStorage
 
     public void start() {
       if (!EXTERNAL_BACKEND) {
+        LOG.info(
+            "Starting storage cluster (version {}) requested by {}", clusterVersion(), initSite);
+
         ccm.create();
         ccm.start();
 

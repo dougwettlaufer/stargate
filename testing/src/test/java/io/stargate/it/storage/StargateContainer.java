@@ -25,7 +25,6 @@ import java.lang.reflect.Method;
 import java.net.ServerSocket;
 import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -72,7 +71,8 @@ public class StargateContainer
         ParameterResolver {
   private static final Logger LOG = LoggerFactory.getLogger(StargateContainer.class);
 
-  private static final File LIB_DIR = new File(System.getProperty("stargate.libdir"));
+  private static final File LIB_DIR = initLibDir();
+
   private static final int PROCESS_WAIT_MINUTES =
       Integer.getInteger("stargate.test.process.wait.timeout.minutes", 10);
 
@@ -102,6 +102,15 @@ public class StargateContainer
         };
 
     Runtime.getRuntime().addShutdownHook(containerShutdown);
+  }
+
+  private static File initLibDir() {
+    String dir = System.getProperty("stargate.libdir");
+    if (dir == null) {
+      throw new IllegalStateException("stargate.libdir system property is not set.");
+    }
+
+    return new File(dir);
   }
 
   private static Container container() {
@@ -190,7 +199,7 @@ public class StargateContainer
   }
 
   @Override
-  public void afterEach(ExtensionContext context) throws Exception {
+  public void afterEach(ExtensionContext context) {
     leave(testExecuting);
   }
 
@@ -240,7 +249,6 @@ public class StargateContainer
   private static class Container implements StargateEnvironmentInfo {
 
     private final UUID id = UUID.randomUUID();
-    private final int instanceNum = stargateInstanceSeq.getAndIncrement();
     private final ClusterConnectionInfo backend;
     private final StargateSpec spec;
     private final StargateParameters parameters;
@@ -255,6 +263,7 @@ public class StargateContainer
 
       Env env = new Env(spec.nodes());
       for (int i = 0; i < spec.nodes(); i++) {
+        int instanceNum = stargateInstanceSeq.getAndIncrement();
         nodes.add(new Node(i, instanceNum, backend, env, parameters));
       }
     }
@@ -333,7 +342,7 @@ public class StargateContainer
 
       cmd = new CommandLine("java");
       cmd.addArgument("-Dstargate.auth_api_enable_username_token=true");
-      cmd.addArgument("-Dstargate.libdir=" + env.libDir(nodeIndex).getAbsolutePath());
+      cmd.addArgument("-Dstargate.libdir=" + env.libDir().getAbsolutePath());
       cmd.addArgument("-Dstargate.bundle.cache.dir=" + cacheDir.getAbsolutePath());
 
       for (Entry<String, String> e : params.systemProperties().entrySet()) {
@@ -349,7 +358,7 @@ public class StargateContainer
       }
 
       cmd.addArgument("-jar");
-      cmd.addArgument(env.stargateJar(nodeIndex).getAbsolutePath());
+      cmd.addArgument(env.stargateJar().getAbsolutePath());
       cmd.addArgument("--cluster-seed");
       cmd.addArgument(backend.seedAddress());
       cmd.addArgument("--seed-port");
@@ -516,14 +525,13 @@ public class StargateContainer
       return 9043;
     }
 
-    private File libDir(int nodeNumber) throws IOException {
+    private File libDir() {
       return LIB_DIR;
     }
 
-    private File stargateJar(int nodeNumber) throws IOException {
-      return Arrays.stream(LIB_DIR.listFiles())
+    private File stargateJar() {
+      return FileUtils.listFiles(LIB_DIR, new String[] {"jar"}, false).stream()
           .filter(f -> f.getName().startsWith("stargate-starter"))
-          .filter(f -> f.getName().endsWith(".jar"))
           .findFirst()
           .orElseThrow(
               () ->
