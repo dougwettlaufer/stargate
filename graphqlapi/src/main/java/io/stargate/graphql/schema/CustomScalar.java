@@ -77,25 +77,12 @@ public enum CustomScalar {
   BIGINT(
       "BigInt",
       "The `BIGINT` scalar type represents a CQL bigint (64-bit signed integer) as a string.",
-      e -> {
-        if (e instanceof String) {
-          return new Long((String) e);
-        }
-        if (e instanceof Long) {
-          return e;
-        }
-        if (e instanceof Integer) {
-          return ((Integer) e).longValue();
-        }
-        throw new NumberFormatException(
-            String.format(
-                "Expected string for bigint scalar, obtained %s", e.getClass().getName()));
-      },
+      CustomScalar::parseInt,
       Object::toString),
   COUNTER(
       "Counter",
       "The `COUNTER` scalar type represents a CQL counter (64-bit signed integer) as a string.",
-      String::valueOf,
+      CustomScalar::parseInt,
       Object::toString),
   ASCII(
       "Ascii",
@@ -157,6 +144,19 @@ public enum CustomScalar {
     return graphQLScalar;
   }
 
+  /** Support json numbers and strings as integer literals */
+  private static long parseInt(Object v) {
+    if (v instanceof String) {
+      return new Long((String) v);
+    }
+    if (v instanceof Long) {
+      return (long) v;
+    }
+    throw new NumberFormatException(
+        String.format(
+            "Expected string for bigint scalar, obtained %s", v.getClass().getName()));
+  }
+
   /**
    * Builds a custom GraphQL scalar for a given scalar. Most of the building is very straight
    * forward - the only complexity arises around building the coercing function that Java-GraphQL
@@ -203,7 +203,7 @@ public enum CustomScalar {
 
           @Override
           public Object parseLiteral(Object value) throws CoercingParseLiteralException {
-            if (value == null || !(value instanceof Value))
+            if (!(value instanceof Value))
               throw new CoercingParseLiteralException("Invalid value literal provided: " + value);
             try {
               Object o = literalValueToObject((Value) value);
@@ -225,10 +225,15 @@ public enum CustomScalar {
       return ((StringValue) value).getValue();
     }
     if (value instanceof IntValue) {
-      return ((IntValue) value).getValue();
+      // Int scalar type represents a signed 32‐bit numeric non‐fractional value.
+      // But, the JSON Number is a 64-bit double than can represents ints up to 2^53
+      // So we choose to represent it as a long
+      return ((IntValue) value).getValue().longValue();
     }
     if (value instanceof FloatValue) {
-      return ((FloatValue) value).getValue();
+      // The Float scalar type represents signed double‐precision fractional values
+      // as specified by IEEE 754, return it as a double
+      return ((FloatValue) value).getValue().doubleValue();
     }
     if (value instanceof BooleanValue) {
       return ((BooleanValue) value).isValue();
