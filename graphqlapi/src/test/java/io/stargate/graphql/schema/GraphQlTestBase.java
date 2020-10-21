@@ -22,7 +22,6 @@ import io.stargate.db.datastore.DataStore;
 import io.stargate.db.datastore.ResultSet;
 import io.stargate.graphql.graphqlservlet.HTTPAwareContextImpl;
 import io.stargate.graphql.graphqlservlet.HTTPAwareContextImpl.BatchContext;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.AfterEach;

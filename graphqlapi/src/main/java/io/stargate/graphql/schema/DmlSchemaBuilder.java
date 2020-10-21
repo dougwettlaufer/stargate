@@ -627,6 +627,8 @@ class DmlSchemaBuilder {
       case Double:
         // GraphQL's Float is a signed double‐precision fractional value
         return Scalars.GraphQLFloat;
+      case Duration:
+        return CustomScalar.DURATION.getGraphQLScalar();
       case Float:
         // Use a custom scalar named "Float32"
         return CustomScalar.FLOAT.getGraphQLScalar();
