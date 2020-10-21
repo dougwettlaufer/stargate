@@ -110,11 +110,26 @@ public enum CustomScalar {
       "The `Blob` scalar type represents a CQL blob as a base64 encoded byte array.",
       o -> ByteBuffer.wrap(Base64.getDecoder().decode(o.toString())),
       o -> Base64.getEncoder().encodeToString(o.array())),
+  SMALLINT(
+      "SmallInt",
+      "The `SmallInt` scalar type represents a CQL smallint (16-bit signed int).",
+      o -> Short.valueOf(o.toString()),
+      e -> e),
+  TINYINT(
+      "TinyInt",
+      "The `TinyInt` scalar type represents a CQL tinyint (8-bit signed int).",
+      o -> Byte.valueOf(o.toString()),
+      e -> e),
   TIMESTAMP(
       "Timestamp",
-      "The `Timestamp` scalar type represents a DateTime.",
+      "The `Timestamp` scalar type represents an instantaneous point on the time-line"
+          + "in ISO-8601 instant format, such as \"2007-12-03T10:15:30.00Z\".",
       o -> Instant.parse((String) o)),
-  TIME("Time", "The `Time` scalar type represents a local time.", o -> LocalTime.parse((String) o));
+  TIME(
+      "Time",
+      "The `Time` scalar type represents a time without a time-zone in the ISO-8601"
+          + " calendar system as a string, such as \"10:15:30.123456789\".",
+      o -> LocalTime.parse((String) o));
 
   private final GraphQLScalarType graphQLScalar;
 

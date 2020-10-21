@@ -177,8 +177,8 @@ public class DmlSchemaBuilderTest {
         arguments(Column.Type.Inet, CustomScalar.INET.getGraphQLScalar()),
         arguments(Column.Type.Date, CustomScalar.DATE.getGraphQLScalar()),
         arguments(Column.Type.Time, CustomScalar.TIME.getGraphQLScalar()),
-        arguments(Column.Type.Smallint, Scalars.GraphQLInt),
-        arguments(Column.Type.Tinyint, Scalars.GraphQLInt));
+        arguments(Column.Type.Smallint, CustomScalar.SMALLINT.getGraphQLScalar()),
+        arguments(Column.Type.Tinyint, CustomScalar.TINYINT.getGraphQLScalar()));
   }
 
   public static Stream<Arguments> getMapArgs() {
@@ -190,7 +190,9 @@ public class DmlSchemaBuilderTest {
         arguments(
             Column.Type.Uuid, Column.Type.List.of(Column.Type.Float), "KeyUuidValueListFloat32"),
         arguments(
-            Column.Type.Smallint, Column.Type.Set.of(Column.Type.Double), "KeyIntValueListFloat"));
+            Column.Type.Smallint,
+            Column.Type.Set.of(Column.Type.Double),
+            "KeySmallIntValueListFloat"));
   }
 
   public static Stream<Arguments> getMapNestedArgs() {
@@ -198,8 +200,8 @@ public class DmlSchemaBuilderTest {
         arguments(
             Column.Type.Tinyint,
             Column.Type.Map.of(Column.Type.Uuid, Column.Type.Int),
-            "InputKeyIntValueListInputKeyUuidValueInt",
-            "KeyIntValueListKeyUuidValueInt"),
+            "InputKeyTinyIntValueListInputKeyUuidValueInt",
+            "KeyTinyIntValueListKeyUuidValueInt"),
         arguments(
             Column.Type.Map.of(Column.Type.Text, Column.Type.Bigint),
             Column.Type.Set.of(Column.Type.Double),

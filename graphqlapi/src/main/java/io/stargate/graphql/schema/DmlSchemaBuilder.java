@@ -633,9 +633,11 @@ class DmlSchemaBuilder {
         // Use a custom scalar named "Float32"
         return CustomScalar.FLOAT.getGraphQLScalar();
       case Int:
-      case Smallint:
-      case Tinyint:
         return Scalars.GraphQLInt;
+      case Smallint:
+        return CustomScalar.SMALLINT.getGraphQLScalar();
+      case Tinyint:
+        return CustomScalar.TINYINT.getGraphQLScalar();
       case Text:
       case Varchar:
         return Scalars.GraphQLString;

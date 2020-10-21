@@ -16,19 +16,24 @@ import io.stargate.db.schema.ImmutableTable;
 import io.stargate.db.schema.Keyspace;
 import io.stargate.db.schema.Table;
 import io.stargate.graphql.schema.DmlTestBase;
-
 import java.math.BigDecimal;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
+import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import org.assertj.core.api.InstanceOfAssertFactories;
@@ -119,7 +124,7 @@ public class ScalarsDmlTest extends DmlTestBase {
     ExecutionResult result =
         executeGraphQl(String.format("query { scalars { values { %s } } }", name));
     assertThat(result.getErrors()).isEmpty();
-    assertThat((Map<String, Object>) result.getData())
+    assertThat(result.<Map<String, Object>>getData())
         .extractingByKey("scalars", InstanceOfAssertFactories.MAP)
         .extractingByKey("values", InstanceOfAssertFactories.LIST)
         .singleElement()
@@ -136,6 +141,9 @@ public class ScalarsDmlTest extends DmlTestBase {
   }
 
   private static Stream<Arguments> getValues() {
+    SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
+    dateFormatter.setTimeZone(TimeZone.getTimeZone(ZoneId.systemDefault()));
+
     return Stream.of(
         arguments(Column.Type.Ascii, "abc", "'abc'"),
         arguments(Column.Type.Ascii, "", "''"),
@@ -169,12 +177,33 @@ public class ScalarsDmlTest extends DmlTestBase {
         arguments(Column.Type.Inet, "2001:db8:a0b:12f0:0:0:0:1", "'2001:db8:a0b:12f0:0:0:0:1'"),
         arguments(Column.Type.Inet, "8.8.8.8", "'8.8.8.8'"),
         arguments(Column.Type.Inet, "127.0.0.1", "'127.0.0.1'"),
-
+        arguments(Column.Type.Inet, "127.0.0.1", "'127.0.0.1'"),
         arguments(Column.Type.Int, 1, null),
         arguments(Column.Type.Int, -1, null),
         arguments(Column.Type.Int, 0, null),
         arguments(Column.Type.Int, Integer.MAX_VALUE, null),
-        arguments(Column.Type.Int, Integer.MIN_VALUE, null));
+        arguments(Column.Type.Int, Integer.MIN_VALUE, null),
+        arguments(Column.Type.Smallint, (short) 0, null),
+        arguments(Column.Type.Smallint, (short) -1, null),
+        arguments(Column.Type.Smallint, (short) 1, null),
+        arguments(Column.Type.Smallint, Short.MAX_VALUE, null),
+        arguments(Column.Type.Smallint, Short.MIN_VALUE, null),
+        arguments(Column.Type.Time, "10:15:30.123456789", "'10:15:30.123456789'"),
+        arguments(Column.Type.Time, "13:45", "'13:45:00.000000000'"),
+        arguments(
+            Column.Type.Timestamp,
+            "2007-12-03T10:15:30Z",
+            "'" + dateFormatter.format(Date.from(Instant.parse("2007-12-03T10:15:30Z"))) + "'"),
+        arguments(
+            Column.Type.Timestamp,
+            "2020-01-03T10:15:31.123Z",
+            "'" + dateFormatter.format(Date.from(Instant.parse("2020-01-03T10:15:31.123Z"))) + "'"),
+        arguments(Column.Type.Tinyint, (byte) 0, null),
+        arguments(Column.Type.Tinyint, (byte) 1, null),
+        arguments(Column.Type.Tinyint, (byte) -1, null),
+        arguments(Column.Type.Tinyint, Byte.MIN_VALUE, null),
+        arguments(Column.Type.Tinyint, Byte.MAX_VALUE, null),
+        arguments(Column.Type.Int, 2, null));
   }
 
   private static Stream<Arguments> getAdditionalLiterals() {
@@ -244,13 +273,19 @@ public class ScalarsDmlTest extends DmlTestBase {
         put(Column.Type.Date, o -> LocalDate.parse(o.toString()));
         put(Column.Type.Decimal, o -> new BigDecimal(o.toString()));
         put(Column.Type.Duration, o -> CqlDuration.from(o.toString()));
-        put(Column.Type.Inet, o -> {
-          try {
-            return InetAddress.getByName(o.toString());
-          } catch (UnknownHostException e) {
-            throw new RuntimeException(e);
-          }
-        });
+        put(
+            Column.Type.Inet,
+            o -> {
+              try {
+                return InetAddress.getByName(o.toString());
+              } catch (UnknownHostException e) {
+                throw new RuntimeException(e);
+              }
+            });
+        put(Column.Type.Smallint, o -> Short.valueOf(o.toString()));
+        put(Column.Type.Time, o -> LocalTime.parse(o.toString()));
+        put(Column.Type.Timestamp, o -> Instant.parse(o.toString()));
+        put(Column.Type.Tinyint, o -> Byte.valueOf(o.toString()));
       }
     };
   }
